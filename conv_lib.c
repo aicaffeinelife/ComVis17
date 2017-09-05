@@ -50,10 +50,9 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 	(*out)->vals = (unsigned char *)calloc(img->rows*img->cols, sizeof(unsigned char));
 	
 	for (int r = 0; r < img->rows; r++)
-	{
-		 
+	{		 
 		for (int c = 0; c < img->cols; c++)
-		{    int sum_x = 0;
+		{       int sum_x = 0;
 			 	for (int dc = -rad_x; dc <= rad_x; dc++)
 			 	{	
 			 		if (c+dc < 0 || c+dc >= img->cols)
@@ -62,7 +61,7 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 			 		}
 			 		sum_x  += img->vals[r*img->cols+c+dc]*fx->vals[dc+rad_x];
 			 	}
-			 	buf[r*img->cols + c] = sum_x/fx->norm ;
+			 	buf[r*img->cols + c] = sum_x/fx->norm;
 			 } 
 	}
 
@@ -75,14 +74,14 @@ for (int r = 0; r < img->rows; r++)
 			int sum_y = 0;
 			for (int dr = -rad_y; dr <= rad_y; dr++)
 			{
-				if (r+dr < 0 || r+dr >=img->rows)
+				if (r+dr < 0 || r+dr >= img->rows)
 				{
 					buf[r*img->cols + c] = 0;
 				}
 
 				sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
 			}
-			(*out)->vals[r*img->cols + c] = sum_y/(fy->norm);
+			(*out)->vals[r*img->cols + c] = sum_y/fy->norm;
 			// printf("%u\n",(*out)->vals[r*img->cols + c]);
 	}
 		}
@@ -114,7 +113,8 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 			 	{	
 			 		if (c+dc < 0)
 			 		{
-			 			img->vals[r*img->cols +c] = 0;
+			 			 img->vals[r*img->cols +c] = 0;
+			 			// continue;
 			 		}
 			 		sum_x  += img->vals[r*img->cols+c+dc]*fx->vals[dc+rad_x];
 			 	}
@@ -137,10 +137,10 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 
 
 	 for (int c = 0; c < img->cols; c++)
-	{   int sum_y = 0;
+	{  
 		for (int r = 0; r < img->rows; r++)
 		{
-			
+			 int sum_y = 0;	
 			if (r == 0)
 			{
 				for (int dr = -rad_y; dr <= rad_y; dr++)
@@ -161,7 +161,11 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	 					}	
 			
 					(*out)->vals[r*img->cols + c] = ((*out)->vals[(r-1)*img->cols + c]*fy->norm - buf[(r-rad_y-1)*img->cols + c] + buf[(r+rad_y)*img->cols + c])/fy->norm;
-					printf("%d %d : %u\n",r,c,(*out)->vals[r*img->cols + c]);
+				// if ((*out)->vals[r*img->cols + c] > 255)
+				// 	{
+				// 		printf("%d %d : %u\n",r,c,(*out)->vals[r*img->cols + c]);
+				// 	}
+							
 			}
 			
 		}
@@ -172,15 +176,3 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	free(buf);
 }
 
-
-// void conv_separable(image_t *img, filter_t *flt, image_t **out) {
-
-// 	int rows = img->rows; 
-// 	int cols = img->cols; 
-// 	(*out)->rows = rows; 
-// 	(*out)->cols = cols;
-// 	(*out)->maxvals = img->maxvals;
-// 	(*out)->vals = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
-
-
-// }

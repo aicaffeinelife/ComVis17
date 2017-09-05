@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
 	// }
 	FILE *fp;
 	ppm_read(fp, "bridge.ppm", &img);
-	// 
+	
 
 	image_t *out;
 	out = (image_t *)malloc(sizeof(image_t));
@@ -34,13 +34,18 @@ int main(int argc, char const *argv[])
 	fy->vals = (const unsigned char[]){1,1,1};
 	fy->norm = 3;
 	fy->radius = 1;
-	
-	// conv_separable(img, fx, fy, &out);
-	conv_sliding_separable(img, fx, fy, &out);
+	filter_t *flt = (filter_t *)malloc(sizeof(filter_t ));
+	flt->radius = 1;
+	flt->norm = 9;
+	flt->vals = (const unsigned char []){1,1,1,1,1,1,1,1,1};
+
+	// conv_naive(img, flt, &out);
+	conv_separable(img, fx, fy, &out);
+	// conv_sliding_separable(img, fx, fy, &out);
 	// for (int i = 0; i < 5; ++i)
 	// {
 		
 	// }
-	ppm_write(fp, "test_sliding.ppm", out);
+	ppm_write(fp, "test_sliding_separable.ppm", out);
 	return 0;
 }
