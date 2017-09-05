@@ -50,24 +50,20 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 	(*out)->vals = (unsigned char *)calloc(img->rows*img->cols, sizeof(unsigned char));
 	
 	for (int r = 0; r < img->rows; r++)
-	{   
+	{
+		 
 		for (int c = 0; c < img->cols; c++)
-		{
-			int sum_x = 0;
-			for (int dc = -rad_x; dc <= rad_x; dc++)
-			{
-				if (c+dc < 0 || c+dc >=img->cols)
-				{
-					img->vals[r*img->cols + c] = 0;
-				}
-
-				sum_x += img->vals[r*img->cols + c+dc]*fx->vals[dc+rad_x];
-			}
-			buf[r*img->cols + c] = sum_x/(fx->norm);
-			printf("%u\n",buf[r*img->cols + c]);
-		}
-		
-		
+		{    int sum_x = 0;
+			 	for (int dc = -rad_x; dc <= rad_x; dc++)
+			 	{	
+			 		if (c+dc < 0 || c+dc >= img->cols)
+			 		{
+			 			img->vals[r*img->cols +c] = 0;
+			 		}
+			 		sum_x  += img->vals[r*img->cols+c+dc]*fx->vals[dc+rad_x];
+			 	}
+			 	buf[r*img->cols + c] = sum_x/fx->norm ;
+			 } 
 	}
 
 
@@ -87,6 +83,7 @@ for (int r = 0; r < img->rows; r++)
 				sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
 			}
 			(*out)->vals[r*img->cols + c] = sum_y/(fy->norm);
+			// printf("%u\n",(*out)->vals[r*img->cols + c]);
 	}
 		}
 		
@@ -121,48 +118,58 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 			 		}
 			 		sum_x  += img->vals[r*img->cols+c+dc]*fx->vals[dc+rad_x];
 			 	}
-			 	buf[r*img->cols + c] = sum_x/fx->norm;
+			 	buf[r*img->cols + c] = sum_x/fx->norm ;
+			 	// printf("%d %d: %u \n",r,c, buf[r*img->cols + c]);
 			 } else {
-			 	buf[r*img->cols + c] = (sum_x - img->vals[r*img->cols + c-1] + img->vals[r*img->cols + c + 2*rad_x])/fx->norm;
+			 			if (c + rad_x  >=img->cols)
+			 			{
+			 				img->vals[r*img->rows + c] = 0;
+			 			}
+			 	buf[r*img->cols + c] = (buf[r*img->cols + c-1]*fx->norm - img->vals[r*img->cols + c-rad_x-1] + img->vals[r*img->cols + c + rad_x])/fx->norm;
+			 	// printf("%d %d: %u \n",r,c, buf[r*img->cols + c]);
+			 	// printf("%d %d: %u \n",r,c-1, buf[r*img->cols + c-1]);
+			 	// printf("%d %d: %u \n",r,c-1, img->vals[r*img->cols + c -1]);
+			 	// printf("%d %d: %u \n",r,c+1, img->vals[r*img->cols + c +1]);
 			 }
 
-			 printf("%u\n", buf[r*img->cols + c]);
 		}
 	}
 
 
-	//  for (int r = 0; r < img->rows; r++)
-	// {   int sum_y = 0;
-	// 	for (int c = 0; c < img->cols; c++)
-	// 	{
+	 for (int c = 0; c < img->cols; c++)
+	{   int sum_y = 0;
+		for (int r = 0; r < img->rows; r++)
+		{
 			
+			if (r == 0)
+			{
+				for (int dr = -rad_y; dr <= rad_y; dr++)
+				{
+					if (r+dr < 0)
+					{
+						buf[r*img->cols + c] = 0;
+					}
 
-	// 		if (r == 0)
-	// 		{
-	// 			for (int dr = -rad_y; dr <= rad_y; dr++)
-	// 			{
-	// 				if (r+dr < 0)
-	// 				{
-	// 					buf[r*img->cols + c] = 0;
-	// 				}
-
-	// 				sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
-	// 			}
-	// 			(*out)->vals[r*img->cols + c] = sum_y/fy->norm;
-	// 		}
-	// 		if (r+2*rad_x+1 > img->rows)
-	//  			{
-	//  				 img->vals[r*img->cols + c] = 0;
+					sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
+				}
+				(*out)->vals[r*img->cols + c] = sum_y/fy->norm;
+			} else {
+						if (r+ rad_x >=img->rows)
+	 					{
+	 				 		buf[r*img->cols + c] = 0;
 	 					
-	//  			}	
+	 					}	
 			
-	// 		(*out)->vals[(r+1)*img->cols + c] = (sum_y - buf[r*img->cols + c] + buf[(r+2*rad_y +1)*img->cols + c])/fy->norm;
-	// 	}
+					(*out)->vals[r*img->cols + c] = ((*out)->vals[(r-1)*img->cols + c]*fy->norm - buf[(r-rad_y-1)*img->cols + c] + buf[(r+rad_y)*img->cols + c])/fy->norm;
+					printf("%d %d : %u\n",r,c,(*out)->vals[r*img->cols + c]);
+			}
+			
+		}
 
 
-	// }
+	}
 
-	// free(buf);
+	free(buf);
 }
 
 
