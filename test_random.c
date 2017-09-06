@@ -39,13 +39,13 @@ int main(int argc, char const *argv[])
 	flt->norm = 9;
 	flt->vals = (const unsigned char []){1,1,1,1,1,1,1,1,1};
 
-	// conv_naive(img, flt, &out);
+	conv_naive(img, flt, &out);
 	// conv_separable(img, fx, fy, &out);
-	conv_sliding_separable(img, fx, fy, &out);
+	// conv_sliding_separable(img, fx, fy, &out);
 	// for (int i = 0; i < 5; ++i)
 	// {
 		
 	// }
-	ppm_write(fp, "test_sliding_window.ppm", out);
+	ppm_write(fp, "test_sliding_naive.ppm", out);
 	return 0;
 }

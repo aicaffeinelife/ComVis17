@@ -15,9 +15,9 @@ void conv_naive(image_t *img, filter_t *flt, image_t **out){
 	(*out)->maxvals = maxvals;
 	(*out)->vals = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
 
-	for (int r = 0; r < rows; r++)
+	for (int r = 1; r < rows-1; r++)
 	{
-		for (int c = 0; c < cols; c++)
+		for (int c = 1; c < cols-1; c++)
 		{
 			int sum = 0;
 			for (int dr = -rad; dr <= rad; dr++)
@@ -49,17 +49,17 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 	(*out)->maxvals = img->maxvals;
 	(*out)->vals = (unsigned char *)calloc(img->rows*img->cols, sizeof(unsigned char));
 	
-	for (int r = 0; r < img->rows; r++)
+	for (int r = 1; r < (img->rows)-1; r++)
 	{		 
-		for (int c = 0; c < img->cols; c++)
-		{       float sum_x = 0.0;
+		for (int c = 1; c < (img->cols)-1; c++)
+		{       int sum_x = 0;
 			 	for (int dc = -rad_x; dc <= rad_x; dc++)
 			 	{	
 			 		if (c+dc < 0 || c+dc >= img->cols)
 			 		{
 			 			img->vals[r*img->cols +c] = 0;
 			 		}
-			 		sum_x  += img->vals[r*img->cols+c+dc]*fx->vals[dc+rad_x];
+			 		sum_x  += img->vals[r*img->cols+(c+dc)];
 			 	}
 			 	buf[r*img->cols + c] = sum_x;
 			 } 
@@ -67,9 +67,9 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 
 
 
-for (int r = 0; r < img->rows; r++)
+for (int r = 1; r < (img->rows)-1; r++)
 	{   
-		for (int c = 0; c < img->cols; c++)
+		for (int c = 1; c < (img->cols)-1; c++)
 		{
 			int sum_y = 0;
 			for (int dr = -rad_y; dr <= rad_y; dr++)
@@ -79,7 +79,7 @@ for (int r = 0; r < img->rows; r++)
 					buf[r*img->cols + c] = 0;
 				}
 
-				sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
+				sum_y += buf[(r+dr)*img->cols+c];
 			}
 			(*out)->vals[r*img->cols + c] = sum_y/9;
 			// printf("%u\n",(*out)->vals[r*img->cols + c]);
@@ -125,7 +125,7 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 			 			{
 			 				img->vals[r*img->rows + c] = 0;
 			 			}
-			 		buf[r*img->cols + c] = (buf[r*img->cols + c-1] - img->vals[r*img->cols + c-1] + img->vals[r*img->cols + c + 1]);
+			 		buf[r*img->cols + c] = (sum_x - img->vals[r*img->cols + (c-rad_x-1)] + img->vals[r*img->cols + c + rad_x]);
 			 	// printf("%d %d: %u \n",r,c, buf[r*img->cols + c]);
 			 	// printf("%d %d: %u \n",r,c-1, buf[r*img->cols + c-1]);
 			 	// printf("%d %d: %u \n",r,c-1, img->vals[r*img->cols + c -1]);
@@ -136,11 +136,11 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	}
 
 
-	 for (int c = 0; c < img->cols; c++)
-	{  
-		for (int r = 0; r < img->rows; r++)
+	 for (int r = 0; r < img->rows; r++)
+	{  int sum_y = 0;	
+		for (int c = 0; c < img->cols; c++)
 		{
-			 int sum_y = 0;	
+			 
 			if (r == 0)
 			{
 				for (int dr = -rad_y; dr <= rad_y; dr++)
@@ -160,7 +160,7 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	 					
 	 					}	
 			
-					(*out)->vals[r*img->cols + c] = ((*out)->vals[(r-1)*img->cols + c] - buf[(r-1)*img->cols + c] + buf[(r+1)*img->cols + c])/9;
+					(*out)->vals[r*img->cols + c] = (sum_y - buf[(r-rad_x-1)*img->cols + c] + buf[(r + rad_x)*img->cols + c])/9;
 				// if ((*out)->vals[r*img->cols + c] > 255)
 				// 	{
 				// 		printf("%d %d : %u\n",r,c,(*out)->vals[r*img->cols + c]);
