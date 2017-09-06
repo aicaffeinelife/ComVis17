@@ -28,12 +28,12 @@ int main(int argc, char const *argv[])
 	filter_t *fx, *fy;
 	fx = (filter_t *)malloc(sizeof(filter_t));
 	fy = (filter_t *)malloc(sizeof(filter_t));
-	fx->vals = (const unsigned char[]){1,1,1};
-	fx->norm = 3;
-	fx->radius = 1;
-	fy->vals = (const unsigned char[]){1,1,1};
-	fy->norm = 3;
-	fy->radius = 1;
+	fx->vals = (const unsigned char[]){1,1,1,1,1,1,1};
+	fx->norm = 7;
+	fx->radius = 3;
+	fy->vals = (const unsigned char[]){1,1,1,1,1,1,1};
+	fy->norm = 7;
+	fy->radius = 3;
 	filter_t *flt = (filter_t *)malloc(sizeof(filter_t ));
 	flt->radius = 1;
 	flt->norm = 9;
