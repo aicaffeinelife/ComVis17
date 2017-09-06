@@ -35,17 +35,17 @@ int main(int argc, char const *argv[])
 	fy->norm = 7;
 	fy->radius = 3;
 	filter_t *flt = (filter_t *)malloc(sizeof(filter_t ));
-	flt->radius = 1;
-	flt->norm = 9;
+	flt->radius = 3;
+	flt->norm = 49;
 	flt->vals = (const unsigned char []){1,1,1,1,1,1,1,1,1};
 
 	// conv_naive(img, flt, &out);
-	conv_separable(img, fx, fy, &out);
-	// conv_sliding_separable(img, fx, fy, &out);
+	// conv_separable(img, fx, fy, &out);
+	conv_sliding_separable(img, fx, fy, &out);
 	// for (int i = 0; i < 5; ++i)
 	// {
 		
 	// }
-	ppm_write(fp, "test_sliding_separable.ppm", out);
+	ppm_write(fp, "test_sliding_window.ppm", out);
 	return 0;
 }
