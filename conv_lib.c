@@ -24,12 +24,12 @@ void conv_naive(image_t *img, filter_t *flt, image_t **out){
 			{
 				for (int dc = -rad; dc <= rad; dc++)
 				{
-					if (r+dr < 0 || r+dr >= rows || c+dc < 0 || c+dc >= cols)
+					if (r+dr < 0 || r+dr > rows || c+dc < 0 || c+dc > cols)
 					{
 						img->vals[r*cols + c] = 0;
 					}
 
-					sum += img->vals[(r+dr)*cols + (c+dc)]*flt->vals[(dr+rad)*(2*rad+1)+(dc+rad)];
+					sum += img->vals[(r+dr)*cols + (c+dc)];
 				}
 			}
 			(*out)->vals[r*cols + c] = sum/flt->norm;
@@ -55,7 +55,7 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 		{       int sum_x = 0;
 			 	for (int dc = -rad_x; dc <= rad_x; dc++)
 			 	{	
-			 		if (c+dc < 0 || c+dc >= img->cols)
+			 		if (c+dc < 0 || c+dc > img->cols)
 			 		{
 			 			img->vals[r*img->cols +c] = 0;
 			 		}
@@ -67,21 +67,21 @@ void conv_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **out){
 
 
 
-for (int r = 1; r < (img->rows)-1; r++)
+for (int r = 1; r < (img->rows); r++)
 	{   
-		for (int c = 1; c < (img->cols)-1; c++)
+		for (int c = 1; c < (img->cols); c++)
 		{
 			int sum_y = 0;
 			for (int dr = -rad_y; dr <= rad_y; dr++)
 			{
-				if (r+dr < 0 || r+dr >= img->rows)
+				if (r+dr < 0 || r+dr > (img->rows)-1)
 				{
 					buf[r*img->cols + c] = 0;
 				}
 
 				sum_y += buf[(r+dr)*img->cols+c];
 			}
-			(*out)->vals[r*img->cols + c] = sum_y/9;
+			(*out)->vals[r*img->cols + c] = sum_y/(fx->norm * fy->norm);
 			// printf("%u\n",(*out)->vals[r*img->cols + c]);
 	}
 		}
@@ -102,10 +102,10 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	(*out)->maxvals = img->maxvals;
 	(*out)->vals = (unsigned char *)calloc(img->rows*img->cols, sizeof(unsigned char));
 	
-	for (int r = 0; r < img->rows; r++)
+	for (int r = 1; r < (img->rows)-1; r++)
 	{
 		 
-		for (int c = 0; c < img->cols; c++)
+		for (int c = 1; c < (img->cols)-1; c++)
 		{    int sum_x = 0;
 			 if (c == 0)
 			 {
@@ -136,19 +136,19 @@ void conv_sliding_separable(image_t *img, filter_t *fx, filter_t *fy, image_t **
 	}
 
 
-	 for (int r = 0; r < img->rows; r++)
-	{  int sum_y = 0;	
-		for (int c = 0; c < img->cols; c++)
+	 for (int r = 1; r < (img->rows)-1; r++)
+	{  
+		for (int c = 1; c < (img->cols)-1; c++)
 		{
-			 
+			int sum_y = 0;				 
 			if (r == 0)
 			{
 				for (int dr = -rad_y; dr <= rad_y; dr++)
 				{
-					if (r+dr < 0)
-					{
-						buf[r*img->cols + c] = 0;
-					}
+					// if (r+dr < 0)
+					// {
+					// 	buf[r*img->cols + c] = 0;
+					// }
 
 					sum_y += buf[(r+dr)*img->cols+c]*fy->vals[dr+rad_y];
 				}
