@@ -32,14 +32,11 @@ int main(int argc, char const *argv[])
 	fy->vals = (const unsigned char[]){1,1,1,1,1,1,1};
 	fy->norm = 7;
 	fy->radius = 3;
-	for (int i = 0; i < 10; ++i)
-	{	
+		
 		clock_gettime(CLOCK_REALTIME,&tp1);
-		conv_separable(img, fx, fy, &out);
+		conv_sliding_separable(img, fx, fy, &out);
 		clock_gettime(CLOCK_REALTIME, &tp2);
-		sum += (tp2.tv_nsec-tp1.tv_nsec);
-	}
-	avg = sum/10;
-	printf("Time taken on avg for %s convolution: %ld\n",argv[1],(long int)avg);
+	
+	printf("Time taken on avg for %s convolution: %ld\n",argv[1],(long int)(tp2.tv_nsec-tp1.tv_nsec));
 	return 0;
 }
