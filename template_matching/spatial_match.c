@@ -5,9 +5,9 @@
 
 char header[80];
 
-float calc_mean(image_t *img){
-	float sum = 0.0;
-	float mean; 
+int calc_mean(image_t *img){
+	int sum = 0.0;
+	int mean; 
 	int i,j;
 	for (i = 0; i < img->rows; ++i)
 	{
@@ -18,9 +18,35 @@ float calc_mean(image_t *img){
 	}
 
 	mean = sum/(img->rows*img->cols);
-	printf("%f\n", mean);
+	printf(" mean %d\n", mean);
 	return mean;
 
+}
+
+float find_max(int *arr, int n){
+	int i;
+	float max = arr[0];
+	for (i = 0; i < n; i++)
+	{
+		if (arr[i] > max)
+		{
+			max = arr[i];
+		}
+	}
+	return max;
+}
+
+float find_min(int *arr, int n){
+	int i;
+	float min = arr[0];
+	for (i = 0; i < n; i++)
+	{
+		if (arr[i] < min)
+		{
+			min = arr[i];
+		}
+	}
+	return min;
 }
 
 
@@ -67,13 +93,13 @@ int main(int argc, char const *argv[])
 	int i;
 	int r,c, dr,dc;
 	int rows, cols, maxvals, nval;
-	float sum, mean;
+	float max_lim, min_lim; 
+	int sum, mean;
 	image_t *img = (image_t *)malloc(sizeof(image_t));
 	image_t *tplt = (image_t *)malloc(sizeof(image_t));
 	FILE *fp;
-	float  *out;
+	int  *out, *mean_buf;
 	unsigned char *norm, *binimg;
-
 	
 	ppm_read(fp, argv[1], &img);
 	read_template(fp, argv[2], &tplt);
@@ -81,10 +107,18 @@ int main(int argc, char const *argv[])
 	rows = img->rows; 
 	cols = img->cols;
 	maxvals = img->maxvals;
-	out = (float *)calloc(rows*cols, sizeof(float));
+	out = (int *)calloc(rows*cols, sizeof(int));
+	mean_buf = (int *)calloc(tplt->rows*tplt->cols, sizeof(int));
 	norm = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
 	binimg = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
 
+	for (r = 0; r < tplt->rows; r++)
+	{
+		for (c = 0; c < tplt->cols; c++)
+		{
+			mean_buf[r*tplt->cols +c] = tplt->vals[r*tplt->cols + c] - mean;
+		}
+	}
 	
 	for (r = 7; r < rows-7; r++)
 	{	
@@ -94,33 +128,35 @@ int main(int argc, char const *argv[])
 			{
 				for (dc = -4; dc <= 4; dc++)
 				{
-					sum += img->vals[(r+dr)*img->cols + (c+dc)]*(tplt->vals[(dr+7)*tplt->cols+(dc+4)]-mean);
+					sum += (img->vals[(r+dr)*img->cols + (c+dc)])*mean_buf[(dr+7)*tplt->cols + (dc+4)];
 				}
 			}
 			out[r*cols + c] = sum;
+			// printf("%d ", out[r*cols +c ] );
 			
 		}
 	}
 
+	max_lim = find_max(out, rows*cols);
+	min_lim = find_min(out, rows*cols);
 	
-	
-	// /* normalize */
-	for (r = 7; r < rows-7; r++)
-	{	
-		for (c = 4; c < cols-4; c++)
-		{	
-			nval = (out[r*cols + c]/65536)*255;
-			norm[r*cols + c] = (unsigned char)(nval);
+	/* normalize */
+	for (r = 0; r < rows; r++)
+	{
+		for (c = 0; c < cols; c++)
+		{
+			norm[r*cols + c] = (out[r*cols + c]-min_lim)*(255/(max_lim-min_lim));	
+			
 		}
 	}
-	// printf("%u\n", norm[8*cols + 500]);
-
+	
+	
 	/*create binary image */ 
 	// for (r = 7; r < rows-7; r++)
 	// {	
 	// 	for (c = 4; c < cols-4; c++)
 	// 	{
-	// 		if (norm[r*cols + c] >= 10)
+	// 		if (norm[r*cols + c] >= 100)
 	// 		{
 	// 			binimg[r*cols + c] = 255;
 	// 		} else{
