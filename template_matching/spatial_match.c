@@ -3,6 +3,8 @@
 #include "image.h"
 #include "ppm.h"
 
+#define MAX_ROWS 1262
+
 char header[80];
 
 int calc_mean(image_t *img){
@@ -83,23 +85,50 @@ void write_msf_image(FILE *fp, const char *fname, unsigned char *out, int rows, 
 }
 
 
+unsigned char * create_thresholded_img(unsigned char *arr, int rows, int cols, int thresh){
+
+	unsigned char *binary = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
+	int r,c; 
+	for (r = 7; r < rows-7; r++)
+	{	
+		for (c = 4; c < cols-4; c++)
+		{
+			if (arr[r*cols + c] >= thresh)
+			{
+				binary[r*cols + c] = 255;
+			} else{
+				binary[r*cols + c] = 0;
+			}
+		}
+	}
+	return binary;
+}
+
+
+
 int main(int argc, char const *argv[])
 {
-	if (argc != 3)
+	if (argc != 4)
 	{
-		printf("Usage sp_match img_name template \n");
+		printf("Usage sp_match img_name template  ground truth \n");
 		exit(1);
 	}
-	int i;
-	int r,c, dr,dc;
+	int i,j;
+	int cr,cc;
+	int r,c, dr,dc,t;
 	int rows, cols, maxvals, nval;
-	float max_lim, min_lim; 
+	float max_lim, min_lim;
+	float TP, FP, TN, FN, tpr, fpr; // params for roc analysis. 
 	int sum, mean;
 	image_t *img = (image_t *)malloc(sizeof(image_t));
 	image_t *tplt = (image_t *)malloc(sizeof(image_t));
-	FILE *fp;
+	FILE *fp, *fpgt, *fpeval;
 	int  *out, *mean_buf;
 	unsigned char *norm, *binimg;
+
+	char letter[MAX_ROWS];
+	int x_pos[MAX_ROWS], y_pos[MAX_ROWS];
+
 	
 	ppm_read(fp, argv[1], &img);
 	read_template(fp, argv[2], &tplt);
@@ -110,7 +139,7 @@ int main(int argc, char const *argv[])
 	out = (int *)calloc(rows*cols, sizeof(int));
 	mean_buf = (int *)calloc(tplt->rows*tplt->cols, sizeof(int));
 	norm = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
-	binimg = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
+	// binimg = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
 
 	for (r = 0; r < tplt->rows; r++)
 	{
@@ -150,22 +179,81 @@ int main(int argc, char const *argv[])
 		}
 	}
 	
-	
-	/*create binary image */ 
-	// for (r = 7; r < rows-7; r++)
-	// {	
-	// 	for (c = 4; c < cols-4; c++)
-	// 	{
-	// 		if (norm[r*cols + c] >= 100)
-	// 		{
-	// 			binimg[r*cols + c] = 255;
-	// 		} else{
-	// 			binimg[r*cols + c] = 0;
-	// 		}
-	// 	}
-	// }
 
-	write_msf_image(fp, "norm_image.ppm", norm, rows, cols, maxvals);
+
+	/* Read and parse ground truth */
+	fpgt = fopen(argv[3], "r");
+	if (fpgt == NULL)
+	{
+		printf("The file couldn't be found \n");
+		exit(1);
+	}
+
+	for (i = 0; i < MAX_ROWS; i++)
+	{
+		fscanf(fpgt, "%c %d %d\n", &letter[i], &x_pos[i], &y_pos[i]);
+	}
+	fclose(fpgt);
+
+	
+	
+	/* Threshold and calculate the tpr and fpr. */
+	fpeval = fopen("detections.txt", "a");
+	for (i = 25; i < 255; i+=25)
+	{	
+		printf("Creating binary image with thresh: %d\n", i);
+		binimg = create_thresholded_img(norm, rows, cols, i);
+		TP = 0;
+		FP = 0;
+		TN = 0;
+		FN = 0;
+
+		for (j = 0; j < MAX_ROWS; j++)
+		{
+			cr = x_pos[j];
+			cc = y_pos[j];
+			// printf("row:%d, col:%d\n",cr,cc);
+			// printf("%u ", binimg[cr*cols + cc]);
+			if (binimg[cr*cols + cc]== 255 && letter[j] == 'e')
+			{
+					TP = TP + 1.0;
+			}
+
+			else if (binimg[cr*cols + cc] == 255 && letter[j] != 'e')
+			 {
+					FP = FP + 1.0;
+			 }	
+
+			else if(binimg[cr*cols + cc] == 0 && letter[j] == 'e')
+			{
+					FN = FN + 1.0;
+			}
+
+			else if (binimg[cr*cols + cc] == 0 && letter[j] != 'e')
+			{
+				   TN = TN + 1.0;
+			}
+
+		}
+
+		tpr = TP/(TP+FN);
+		fpr = FP/(FP + FN);
+		fprintf(fpeval, "%d %1.3f %1.3f\n", i, tpr, fpr);
+		
+
+	}
+	fclose(fpeval);
+
+	// write_msf_image(fp, "bin_image.ppm", binimg, rows, cols, maxvals);
 	// ppm_write(fp, "mean_centered.ppm", img);
+
+	free(norm);
+	free(out);
+	free(binimg);
+	free(mean_buf);
+	free(img->vals);
+	free(img);
+	free(tplt->vals);
+	free(tplt);
 	return 0;
 }
