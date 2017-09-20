@@ -85,24 +85,24 @@ void write_msf_image(FILE *fp, const char *fname, unsigned char *out, int rows, 
 }
 
 
-unsigned char * create_thresholded_img(unsigned char *arr, int rows, int cols, int thresh){
+// unsigned char * create_thresholded_img(unsigned char *arr, int rows, int cols, int thresh){
 
-	unsigned char *binary = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
-	int r,c; 
-	for (r = 7; r < rows-7; r++)
-	{	
-		for (c = 4; c < cols-4; c++)
-		{
-			if (arr[r*cols + c] >= thresh)
-			{
-				binary[r*cols + c] = 255;
-			} else{
-				binary[r*cols + c] = 0;
-			}
-		}
-	}
-	return binary;
-}
+// 	unsigned char *binary = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
+// 	int r,c; 
+// 	for (r = 0; r < rows; r++)
+// 	{	
+// 		for (c = 0; c < cols; c++)
+// 		{
+// 			if (arr[r*cols + c] >= thresh)
+// 			{
+// 				binary[r*cols + c] = 255;
+// 			} else{
+// 				binary[r*cols + c] = 0;
+// 			}
+// 		}
+// 	}
+// 	return binary;
+// }
 
 
 
@@ -118,7 +118,8 @@ int main(int argc, char const *argv[])
 	int r,c, dr,dc,t;
 	int rows, cols, maxvals, nval;
 	float max_lim, min_lim;
-	float TP, FP, TN, FN, tpr, fpr; // params for roc analysis. 
+	float TP, FP, TN, FN; // params for roc analysis. 
+	float tpr, fpr;
 	int sum, mean;
 	image_t *img = (image_t *)malloc(sizeof(image_t));
 	image_t *tplt = (image_t *)malloc(sizeof(image_t));
@@ -128,7 +129,7 @@ int main(int argc, char const *argv[])
 
 	char letter[MAX_ROWS];
 	int x_pos[MAX_ROWS], y_pos[MAX_ROWS];
-
+	int detected; // False since nothing is detected. 
 	
 	ppm_read(fp, argv[1], &img);
 	read_template(fp, argv[2], &tplt);
@@ -139,7 +140,7 @@ int main(int argc, char const *argv[])
 	out = (int *)calloc(rows*cols, sizeof(int));
 	mean_buf = (int *)calloc(tplt->rows*tplt->cols, sizeof(int));
 	norm = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
-	// binimg = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
+	binimg = (unsigned char *)calloc(rows*cols, sizeof(unsigned char));
 
 	for (r = 0; r < tplt->rows; r++)
 	{
@@ -191,7 +192,7 @@ int main(int argc, char const *argv[])
 
 	for (i = 0; i < MAX_ROWS; i++)
 	{
-		fscanf(fpgt, "%c %d %d\n", &letter[i], &x_pos[i], &y_pos[i]);
+		fscanf(fpgt, "%c %d %d\n", &letter[i], &y_pos[i], &x_pos[i]);
 	}
 	fclose(fpgt);
 
@@ -199,10 +200,23 @@ int main(int argc, char const *argv[])
 	
 	/* Threshold and calculate the tpr and fpr. */
 	fpeval = fopen("detections.txt", "a");
-	for (i = 25; i < 255; i+=25)
+	for (i = 0; i < 256; i+=15)
 	{	
 		printf("Creating binary image with thresh: %d\n", i);
-		binimg = create_thresholded_img(norm, rows, cols, i);
+		for (r = 0; r < rows; r++)
+		{
+			for (c = 0; c < cols ; c++)
+			{
+				if (norm[r*cols + c] >= i)
+				{
+					binimg[r*cols + c] = 255;
+				} else {
+					  binimg[r*cols + c] = 0;
+				}
+			}
+		}
+
+		
 		TP = 0;
 		FP = 0;
 		TN = 0;
@@ -212,32 +226,52 @@ int main(int argc, char const *argv[])
 		{
 			cr = x_pos[j];
 			cc = y_pos[j];
-			// printf("row:%d, col:%d\n",cr,cc);
+			// printf("row:%d, col:%d ",cr,cc);
 			// printf("%u ", binimg[cr*cols + cc]);
-			if (binimg[cr*cols + cc]== 255 && letter[j] == 'e')
+			for (dr = -7; dr <= 7; dr++)
+			{		detected = 0;
+				for (dc = -4; dc <= 4; dc++)
+				{  
+					if (binimg[(cr+dr)*cols + (cc+dc)] == 255)
+					{
+						detected = 1;
+						break;
+					} else {
+						 detected = 0;
+					}
+				}
+				if (detected == 1)
+				{
+					break;
+				}
+			}
+			if (detected == 1 && letter[j] == 'e')
 			{
-					TP = TP + 1.0;
+				TP = TP + 1;
+			}else if(detected == 1 && letter[j] != 'e')
+			{
+				FP = FP + 1;
+			}else if(detected == 0 && letter[j] == 'e')
+			{
+				FN = FN + 1;
+			}else if(detected == 0 && letter[j] != 'e')
+			{
+				TN = TN + 1;
 			}
 
-			else if (binimg[cr*cols + cc] == 255 && letter[j] != 'e')
-			 {
-					FP = FP + 1.0;
-			 }	
-
-			else if(binimg[cr*cols + cc] == 0 && letter[j] == 'e')
-			{
-					FN = FN + 1.0;
-			}
-
-			else if (binimg[cr*cols + cc] == 0 && letter[j] != 'e')
-			{
-				   TN = TN + 1.0;
-			}
+			
+		}
+		if (i == 180)
+		{
+			write_msf_image(fp, "bin_image.ppm", binimg, rows, cols, maxvals);
 
 		}
 
 		tpr = TP/(TP+FN);
-		fpr = FP/(FP + FN);
+		fpr = FP/(FP+TN);
+		printf("tpr: %f\n",tpr);
+		printf("fpr: %f\n", fpr);
+		// fprintf(fpeval, "%d %0.0f %0.0f %0.0f %0.0f\n", i, TP, FP, FN, TN);
 		fprintf(fpeval, "%d %1.3f %1.3f\n", i, tpr, fpr);
 		
 

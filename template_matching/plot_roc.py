@@ -17,20 +17,28 @@ for line in lines:
 	fpr.append(float(line.split(' ')[2]))
 
 
+
+print(len(fpr))
+print(len(tpr))
 fig = plt.figure()
 ax = fig.add_subplot(111)
-plt.plot(tpr, fpr, color='navy')
 
-for i in range(len(tpr)):
-	ax.annotate(thresh[i], (tpr[i], fpr[i]))
+
+plt.plot(fpr, tpr, color='orange')
+
+for i in range(len(thresh)):
+	if fpr[i] >= 1.0:
+		ax.annotate(' ', (fpr[i], tpr[i]))
+	else:
+		ax.annotate(thresh[i], (fpr[i], tpr[i]))
 
 
 plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.0])
+plt.ylim([0.0, 1.1])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('ROC curve')
-fig.savefig('ROC_curve.png')
+fig.savefig('ROC_curve_4.png')
 
 
 	
